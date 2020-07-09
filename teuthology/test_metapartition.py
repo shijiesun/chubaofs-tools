@@ -123,26 +123,27 @@ class MetaPartitionTestCase(unittest2.TestCase):
         else:
             oneline = result_str
 
-        line = json.loads(oneline)
-        #print(line)
-        assert "Flag" in line
-        assert "NLink" in line
-        assert "Generation" in line
-        assert "LinkTarget" in line
-        assert "AccessTime" in line
-        assert "Reserved" in line
-        assert "CreateTime" in line
-        assert "Extents" in line
-        assert "ModifyTime" in line
-        assert "Uid" in line
-        assert "Gid" in line
-        assert "Size" in line
-        assert "Type" in line
-        assert "Inode" in line
+        if len(oneline) > 0:
+            line = json.loads(oneline)
+            print(line)
+            assert "Flag" in line
+            assert "NLink" in line
+            assert "Generation" in line
+            assert "LinkTarget" in line
+            assert "AccessTime" in line
+            assert "Reserved" in line
+            assert "CreateTime" in line
+            assert "Extents" in line
+            assert "ModifyTime" in line
+            assert "Uid" in line
+            assert "Gid" in line
+            assert "Size" in line
+            assert "Type" in line
+            assert "Inode" in line
 
-        self.assert_getextentsbyinode(meta_ip, pid, line["Inode"])
+            self.assert_getextentsbyinode(meta_ip, pid, line["Inode"])
 
-        self.assert_getdirectory(meta_ip, pid, line["Inode"], line["Type"])
+            self.assert_getdirectory(meta_ip, pid, line["Inode"], line["Type"])
 
 
     def assert_getalldentry(self, meta_ip, pid):
@@ -179,7 +180,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
             self.assert_getallinodes(meta_ip, pid)
             self.assert_getalldentry(meta_ip, pid)
             #check one partition at most
-            break;
+            #break
 
     def test_allmetapartiions(self):
         url = env.MASTER + "/topo/get";
@@ -209,7 +210,145 @@ class MetaPartitionTestCase(unittest2.TestCase):
                         ip = addr[0:addr.find(":")]
                         self.assert_getpartitions(ip)
                         #check one node at most
-                        break;
+                        #break
+
+    def get_one_partition(self):
+        rst = {}
+        url = env.MASTER + "/topo/get";
+        print_url(url)
+        result = requests.get(url)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        self.assert_base_resp(content)
+
+        assert "Zones" in content["data"];
+        #print(content["data"]["Zones"])
+
+        for zone in content["data"]["Zones"]:
+            assert "Name" in zone
+            print("check zone:" + zone["Name"])
+            assert "Status" in zone
+            if zone["Status"] == "available":
+                assert "NodeSet" in zone
+                for i in zone["NodeSet"]:
+                    assert "MetaNodes" in zone["NodeSet"][i]
+                    for node in zone["NodeSet"][i]["MetaNodes"]:
+                        assert "Status" in node
+                        #if node["Status"] == "True":
+                        assert "Addr" in node
+                        addr = node["Addr"]
+                        print("check metanode:" + addr)
+                        meta_ip = addr[0:addr.find(":")]
+
+                        url = "http://" + meta_ip + ":" + env.META_PORT + "/getPartitions"
+                        print_url(url)
+                        result = requests.get(url)
+
+                        assert result.status_code == 200
+                        content = json.loads(result.content.decode())
+                        self.assert_base_resp(content)
+
+                        for pid in content["data"]:
+                            rst[pid] = addr
+        return rst
+
+    def assert_metapartition_load(self, pid):
+        url = env.MASTER + "/metaPartition/load?id=" + pid
+        print_url(url)
+        result = requests.get(url)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        self.assert_base_resp(content)
+        #print(content)
+
+    def assert_get_mp_for_master(self, pid):
+        url = env.MASTER + "/metaPartition/get?id=" + str(pid)
+        print_url(url)
+        result = requests.get(url)
+
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        self.assert_base_resp(content)
+
+        data = content["data"]
+        print(data)
+
+        assert "VolName" in data
+        assert "Zones" in data
+        assert "PartitionID" in data
+        assert "Status" in data
+        assert "DentryCount" in data
+        assert "Start" in data
+        assert "End" in data
+        assert "Hosts" in data
+        assert "InodeCount" in data
+        assert "IsRecover" in data
+        assert "LoadResponse" in data
+        assert "MaxInodeID" in data
+        assert "MissNodes" in data
+        assert "Peers" in data
+        assert "ReplicaNum" in data
+        assert "Replicas" in data
+
+    def atest_read_mp_for_master(self):
+        result = self.get_one_partition();
+        for pid in result:
+            self.assert_get_mp_for_master(pid)
+            self.assert_metapartition_load(pid)
+
+
+    def atest_create_mp_for_master(self):
+        result = self.get_one_partition();
+        for pid in result:
+            url = env.MASTER + "/metaPartition/get?id=" + str(pid)
+            print_url(url)
+            result = requests.get(url)
+
+            assert result.status_code == 200
+            content = json.loads(result.content.decode())
+            self.assert_base_resp(content)
+
+            data = content["data"]
+            print(data)
+
+            start = data["Start"]
+            end = data["End"]
+            cut = (end - start) / 2
+            print(start)
+            print(end)
+            print(int(cut))
+
+            url = env.MASTER + "/metaPartition/create?name=" + data["VolName"] + "&start=" + str(int(cut))
+            print_url(url)
+            result = requests.get(url)
+
+            assert result.status_code == 200
+            content = json.loads(result.content.decode())
+            self.assert_base_resp(content)
+
+            data = content["data"]
+            print(data)
+            break
+
+    def atest_decommission_mp_for_master(self):
+        result = self.get_one_partition();
+        for pid in result:
+            addr = result[pid]
+
+            url = env.MASTER + "/metaPartition/decommission?id=" + str(pid) + "&addr=" + addr
+            print_url(url)
+
+            result = requests.get(url)
+
+            assert result.status_code == 200
+            content = json.loads(result.content.decode())
+            self.assert_base_resp(content)
+
+            data = content["data"]
+            print(data)
+            break
+
+
 
 if __name__ == '__main__':
     unittest2.main(verbosity=2)
