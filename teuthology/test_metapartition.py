@@ -22,7 +22,7 @@ import json
 
 
 def print_url(url):
-    #print("request url:" + url)
+    print("request url:" + url)
     url
 
 class MetaPartitionTestCase(unittest2.TestCase):
@@ -60,7 +60,6 @@ class MetaPartitionTestCase(unittest2.TestCase):
     def assert_getextentsbyinode(self, meta_ip, pid, ino):
         url = "http://" + meta_ip + ":" + env.META_PORT + "/getExtentsByInode?pid=" + pid + "&ino=" + str(ino)
         print_url(url)
-        print("request url:" + url)
         result = requests.get(url)
 
         assert result.status_code == 200
@@ -87,7 +86,6 @@ class MetaPartitionTestCase(unittest2.TestCase):
     def assert_getdirectory(self, meta_ip, pid, ino, typ):
         url = "http://" + meta_ip + ":" + env.META_PORT + "/getDirectory?pid=" + pid + "&parentIno=" + str(ino)
         print_url(url)
-        print("request url:" + url)
         result = requests.get(url)
 
         assert result.status_code == 200
@@ -180,7 +178,8 @@ class MetaPartitionTestCase(unittest2.TestCase):
             self.assert_getpartitionbyid(meta_ip, pid)
             self.assert_getallinodes(meta_ip, pid)
             self.assert_getalldentry(meta_ip, pid)
-
+            #check one partition at most
+            break;
 
     def test_allmetapartiions(self):
         url = env.MASTER + "/topo/get";
@@ -209,6 +208,8 @@ class MetaPartitionTestCase(unittest2.TestCase):
                         print("check metanode:" + addr)
                         ip = addr[0:addr.find(":")]
                         self.assert_getpartitions(ip)
+                        #check one node at most
+                        break;
 
 if __name__ == '__main__':
     unittest2.main(verbosity=2)
