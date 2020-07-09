@@ -21,21 +21,24 @@ import requests
 import json
 
 
-
+def print_url(url):
+    #print("request url:" + url)
+    url
 
 class MetaPartitionTestCase(unittest2.TestCase):
 
     def assert_base_resp(self, content):
         #TODO 没有一个统一的格式
         assert 'code' in content
-        #assert content['code'] == 0
+        #print(content['code'])
+        assert(content['code'] == 0 or content['code'] == 200 or content['code'] == 303)
         assert 'msg' in content
         #assert content['msg'] == "ok"
         assert 'data' in content
 
     def assert_getpartitionbyid(self, meta_ip, pid):
         url = "http://" + meta_ip + ":" + env.META_PORT + "/getPartitionById?pid=" + pid
-        print("request url:" + url)
+        print_url(url)
         result = requests.get(url)
 
         assert result.status_code == 200
@@ -53,9 +56,62 @@ class MetaPartitionTestCase(unittest2.TestCase):
             assert "id" in peer
             assert "addr" in peer
 
+    #if ino is dir, then extent is None
+    def assert_getextentsbyinode(self, meta_ip, pid, ino):
+        url = "http://" + meta_ip + ":" + env.META_PORT + "/getExtentsByInode?pid=" + pid + "&ino=" + str(ino)
+        print_url(url)
+        print("request url:" + url)
+        result = requests.get(url)
+
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        #print(content)
+        self.assert_base_resp(content)
+        data = content["data"]
+        assert "gen" in data
+        assert "sz" in data
+        assert "sz" in data
+        assert "eks" in data
+        eks = data["eks"]
+
+        if eks != None:
+            for ek in eks:
+                assert "ExtentId" in ek
+                assert "Size" in ek
+                assert "CRC" in ek
+                assert "ExtentOffset" in ek
+                assert "PartitionId" in ek
+                assert "FileOffset" in ek
+
+    #if ino is not a directory, children is None
+    def assert_getdirectory(self, meta_ip, pid, ino, typ):
+        url = "http://" + meta_ip + ":" + env.META_PORT + "/getDirectory?pid=" + pid + "&parentIno=" + str(ino)
+        print_url(url)
+        print("request url:" + url)
+        result = requests.get(url)
+
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        self.assert_base_resp(content)
+        data = content["data"]
+        #print(typ)
+        #print(data)
+
+        if typ == 2147484159 or typ == 2147484141:
+            assert len(data["children"]) > 0
+            for child in data["children"]:
+                assert "ino" in child
+                assert "name" in child
+                assert "type" in child
+
+        elif typ == 420:
+            assert data["children"] is None
+        else:
+            assert False
+
     def assert_getallinodes(self, meta_ip, pid):
         url = "http://" + meta_ip + ":" + env.META_PORT + "/getAllInodes?pid=" + pid
-        print("request url:" + url)
+        print_url(url)
         result = requests.get(url)
 
         assert result.status_code == 200
@@ -86,11 +142,15 @@ class MetaPartitionTestCase(unittest2.TestCase):
         assert "Type" in line
         assert "Inode" in line
 
+        self.assert_getextentsbyinode(meta_ip, pid, line["Inode"])
+
+        self.assert_getdirectory(meta_ip, pid, line["Inode"], line["Type"])
+
 
     def assert_getalldentry(self, meta_ip, pid):
         #TODO 是否应该改为AllDentrys
         url = "http://" + meta_ip + ":" + env.META_PORT + "/getAllDentry?pid=" + pid
-        print("request url:" + url)
+        print_url(url)
         result = requests.get(url)
 
         assert result.status_code == 200
@@ -109,7 +169,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
 
     def assert_getpartitions(self, meta_ip):
         url = "http://" + meta_ip + ":" + env.META_PORT + "/getPartitions"
-        print("request url:" + url)
+        print_url(url)
         result = requests.get(url)
 
         assert result.status_code == 200
@@ -124,7 +184,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
 
     def test_allmetapartiions(self):
         url = env.MASTER + "/topo/get";
-        print("request url:" + url)
+        print_url(url)
         result = requests.get(url)
         assert result.status_code == 200
         content = json.loads(result.content.decode())
