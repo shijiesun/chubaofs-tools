@@ -41,7 +41,7 @@ def get_user_vol_list():
             rst[vol] = uid
     return rst
 
-class MetaPartitionTestCase(unittest2.TestCase):
+class UserTestCase(unittest2.TestCase):
 
     def assert_base_resp(self, content):
         #TODO 没有一个统一的格式
@@ -68,7 +68,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
         assert result.status_code == 200
         content = json.loads(result.content.decode())
         self.assert_base_resp(content)
-        #print(content)
+        print(content)
 
         for u in content["data"]:
             assert "Mu" in u
@@ -84,6 +84,113 @@ class MetaPartitionTestCase(unittest2.TestCase):
             #print(u["policy"])
             #assert "authorized_vols" in u["policy"][i] #TODO what's inside
             #assert "own_vols" in u["policy"][i]
+
+    def atest_user_get(self):
+        rst = get_user_vol_list()
+        assert len(rst) > 0
+
+        u = ""
+        for vol in rst:
+            u = rst[vol]
+            break
+
+        url = env.MASTER + "/user/info?user=" + u;
+        print_url(url)
+        result = requests.get(url)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        self.assert_base_resp(content)
+        #print(content)
+
+        assert "Mu" in content["data"]
+        assert "access_key" in content["data"]
+        assert "create_time" in content["data"]
+        assert "policy" in content["data"]
+        assert "secret_key" in content["data"]
+        assert "user_id" in content["data"]
+        assert "user_type" in content["data"]
+
+            #for i in u["policy"]:
+            #print(i)
+            #print(u["policy"])
+            #assert "authorized_vols" in u["policy"][i] #TODO what's inside
+            #assert "own_vols" in u["policy"][i]
+
+    def test_user_create_update_delete(self):
+        url = env.MASTER + "/user/create"
+        print_url(url)
+        d = json.dumps({"id":"testuser","pwd":"12345","type":3})
+        print(d)
+        result = requests.post(url, data = d)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        #self.assert_base_resp(content)
+        print(content)
+
+        url = env.MASTER + "/user/update"
+        print_url(url)
+        d = json.dumps({"user_id":"testuser","access_key":"KzuIVYCFqvu0b3Rd","secret_key":"iaawlCchJeeuGSnmFW72J2oDqLlSqvA5","type":3})
+        print(d)
+        result = requests.post(url, data = d)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        #self.assert_base_resp(content)
+        print(content)
+
+        url = env.MASTER + "/user/akInfo?ak=KzuIVYCFqvu0b3Rd"
+        print_url(url)
+        result = requests.get(url)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        #self.assert_base_resp(content)
+        print(content)
+
+        rst = get_user_vol_list()
+        assert len(rst) > 0
+
+        v = ""
+        for vol in rst:
+            v = rst[vol]
+            break
+
+        url = env.MASTER + "/user/updatePolicy"
+        print_url(url)
+        d = json.dumps({'user_id':'testuser','volume':v,'policy':['perm:builtin:ReadOnly','perm:custom:PutObjectAction']})
+        print(d)
+        result = requests.post(url, data = d)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        #self.assert_base_resp(content)
+        print(content)
+
+        url = env.MASTER + "/user/removePolicy"
+        print_url(url)
+        d = json.dumps({'user_id':'testuser','volume':v})
+        print(d)
+        result = requests.post(url, data = d)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        #self.assert_base_resp(content)
+        print(content)
+
+        url = env.MASTER + "/user/transferVol"
+        print_url(url)
+        d = json.dumps({"volume":"ltptest","user_src":"testuser","user_dst":"ltptest","force":True})
+        print(d)
+        result = requests.post(url, data = d)
+        #assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        #self.assert_base_resp(content)
+        print(content)
+
+        url = env.MASTER + "/user/delete?user=testuser"
+        print_url(url)
+        result = requests.get(url)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        self.assert_base_resp(content)
+        print(content)
+
 
 
 if __name__ == '__main__':
