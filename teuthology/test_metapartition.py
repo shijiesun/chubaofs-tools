@@ -23,7 +23,24 @@ import json
 
 def print_url(url):
     print("request url:" + url)
-    url
+
+def get_user_vol_list():
+    rst = {}
+    url = env.MASTER + "/user/list";
+    print_url(url)
+    result = requests.get(url)
+    if result.status_code != 200:
+        return {}
+    content = json.loads(result.content.decode())
+    #print(content)
+
+    for u in content["data"]:
+        uid = u["user_id"]
+        for vol in u["policy"]["own_vols"]:
+            #print(vol + " " + uid)
+            rst[vol] = uid
+    return rst
+
 
 class MetaPartitionTestCase(unittest2.TestCase):
 
@@ -182,7 +199,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
             #check one partition at most
             #break
 
-    def test_allmetapartiions(self):
+    def atest_allmetapartiions(self):
         url = env.MASTER + "/topo/get";
         print_url(url)
         result = requests.get(url)
@@ -212,7 +229,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
                         #check one node at most
                         #break
 
-    def get_one_partition(self):
+    def get_all_mp(self):
         rst = {}
         url = env.MASTER + "/topo/get";
         print_url(url)
@@ -291,14 +308,14 @@ class MetaPartitionTestCase(unittest2.TestCase):
         assert "Replicas" in data
 
     def atest_read_mp_for_master(self):
-        result = self.get_one_partition();
+        result = self.get_all_mp();
         for pid in result:
             self.assert_get_mp_for_master(pid)
             self.assert_metapartition_load(pid)
 
 
     def atest_create_mp_for_master(self):
-        result = self.get_one_partition();
+        result = self.get_all_mp();
         for pid in result:
             url = env.MASTER + "/metaPartition/get?id=" + str(pid)
             print_url(url)
@@ -331,7 +348,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
             break
 
     def atest_decommission_mp_for_master(self):
-        result = self.get_one_partition();
+        result = self.get_all_mp();
         for pid in result:
             addr = result[pid]
 
@@ -348,6 +365,35 @@ class MetaPartitionTestCase(unittest2.TestCase):
             print(data)
             break
 
+    def test_get_client_mp(self):
+        rst = get_user_vol_list()
+        assert len(rst) > 0
+
+        vol = ""
+        for v in rst:
+            vol = v
+            break
+
+        url = env.MASTER + "/client/metaPartitions?name=" + vol;
+        print_url(url)
+        result = requests.get(url)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        self.assert_base_resp(content)
+        #print(content)
+
+        for mp in content["data"]:
+            #print(mp)
+            assert "PartitionID" in mp
+            assert "Status" in mp
+            assert "DentryCount" in mp
+            assert "Start" in mp
+            assert "End" in mp
+            assert "InodeCount" in mp
+            assert "IsRecover" in mp
+            assert "MaxInodeID" in mp
+            assert "LeaderAddr" in mp
+            assert "Members" in mp
 
 
 if __name__ == '__main__':
