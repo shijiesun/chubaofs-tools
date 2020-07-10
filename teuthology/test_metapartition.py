@@ -199,7 +199,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
             #check one partition at most
             #break
 
-    def atest_allmetapartiions(self):
+    def test_allmetapartiions(self):
         url = env.MASTER + "/topo/get";
         print_url(url)
         result = requests.get(url)

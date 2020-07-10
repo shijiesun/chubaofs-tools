@@ -41,8 +41,22 @@ def get_user_vol_list():
             rst[vol] = uid
     return rst
 
+def get_replica_by_dpid(dpid):
+    replica_addrs = {}
+    url = env.MASTER + "/dataPartition/get?id=" + str(dpid);
+    print_url(url)
+    result = requests.get(url)
+    if result.status_code != 200:
+        return []
+    content = json.loads(result.content.decode())
+    #print(content)
 
-class MetaPartitionTestCase(unittest2.TestCase):
+    for r in content["data"]["Replicas"]:
+        print(r)
+        replica_addrs[r["Addr"]] = r["DiskPath"]
+    return replica_addrs
+
+class DataPartitionTestCase(unittest2.TestCase):
 
     def assert_base_resp(self, content):
         #TODO 没有一个统一的格式
@@ -135,6 +149,90 @@ class MetaPartitionTestCase(unittest2.TestCase):
             assert "TotalSize" in r
             assert "UsedSize" in r
 
+    def atest_dp_create(self):
+        rst = get_user_vol_list()
+        assert len(rst) > 0
+
+        vol = ""
+        for v in rst:
+            vol = v
+            break
+
+        url = env.MASTER + "/dataPartition/create?count=3&name=" + vol
+        print_url(url)
+        result = requests.get(url)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        self.assert_base_resp(content)
+        print(content)
+
+    def atest_dp_load(self):
+        rst = self.get_client_dp()
+        assert len(rst) > 0
+
+        dpid = ""
+        for id in rst:
+            dpid = id
+            break
+
+        url = env.MASTER + "/dataPartition/load?id=" + str(dpid);
+        print_url(url)
+        result = requests.get(url)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        self.assert_base_resp(content)
+        print(content)
+
+    def atest_dp_decommission(self):
+        rst = self.get_client_dp()
+        assert len(rst) > 0
+
+        dpid = ""
+        for id in rst:
+            dpid = id
+            break
+
+        replica_addrs = get_replica_by_dpid(dpid)
+
+        replica_addr = ""
+        for key in replica_addrs:
+            replica_addr = key
+            break
+
+        url = env.MASTER + "/dataPartition/decommission?id=" + str(dpid) + "&addr=" + replica_addr
+        print_url(url)
+        result = requests.get(url)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        self.assert_base_resp(content)
+        print(content)
+
+    def atest_dp_offdisk(self):
+        rst = self.get_client_dp()
+        assert len(rst) > 0
+
+        dpid = ""
+        for id in rst:
+            dpid = id
+            break
+
+        replica_addrs = get_replica_by_dpid(dpid)
+        print(replica_addrs)
+
+        replica_addr = ""
+        disk = ""
+        for key in replica_addrs:
+            replica_addr = key
+            disk = replica_addrs[key]
+            break
+
+        url = env.MASTER + "/disk/decommission?addr=" + replica_addr + "&disk=" + disk
+        print_url(url)
+        result = requests.get(url)
+        assert result.status_code == 200
+        content = json.loads(result.content.decode())
+        #self.assert_base_resp(content)
+        print(content)
 
 if __name__ == '__main__':
     unittest2.main(verbosity=2)
