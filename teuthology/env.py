@@ -17,6 +17,9 @@
 MASTER = "http://master.local:17010"
 META_PORT = "17220"
 
+#MASTER = "http://11.51.28.251:8080"
+#META_PORT = "9092"
+
 # MASTER = 'http://master.chubao.io'
 # ENDPOINT = 'http://chubaofs-s3-api-test.jd.local'
 # ACCESS_KEY = 'kZr8asDz6rkLMkqO'

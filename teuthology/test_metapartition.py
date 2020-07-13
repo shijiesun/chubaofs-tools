@@ -113,12 +113,11 @@ class MetaPartitionTestCase(unittest2.TestCase):
         #print(data)
 
         if typ == 2147484159 or typ == 2147484141:
-            assert len(data["children"]) > 0
-            for child in data["children"]:
-                assert "ino" in child
-                assert "name" in child
-                assert "type" in child
-
+            if data["children"] is not None:
+                for child in data["children"]:
+                    assert "ino" in child
+                    assert "name" in child
+                    assert "type" in child
         elif typ == 420:
             assert data["children"] is None
         else:
@@ -230,6 +229,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
                         #break
 
     def get_all_mp(self):
+        print("call ---------> get_all_mp")
         rst = {}
         url = env.MASTER + "/topo/get";
         print_url(url)
@@ -267,6 +267,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
 
                         for pid in content["data"]:
                             rst[pid] = addr
+        print("end ---------> get_all_mp")
         return rst
 
     def assert_metapartition_load(self, pid):
@@ -307,14 +308,14 @@ class MetaPartitionTestCase(unittest2.TestCase):
         assert "ReplicaNum" in data
         assert "Replicas" in data
 
-    def atest_read_mp_for_master(self):
+    def test_read_mp_for_master(self):
         result = self.get_all_mp();
         for pid in result:
             self.assert_get_mp_for_master(pid)
             self.assert_metapartition_load(pid)
 
 
-    def atest_create_mp_for_master(self):
+    def test_create_mp_for_master(self):
         result = self.get_all_mp();
         for pid in result:
             url = env.MASTER + "/metaPartition/get?id=" + str(pid)
@@ -347,7 +348,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
             print(data)
             break
 
-    def atest_decommission_mp_for_master(self):
+    def test_decommission_mp_for_master(self):
         result = self.get_all_mp();
         for pid in result:
             addr = result[pid]
@@ -359,7 +360,7 @@ class MetaPartitionTestCase(unittest2.TestCase):
 
             assert result.status_code == 200
             content = json.loads(result.content.decode())
-            self.assert_base_resp(content)
+            #self.assert_base_resp(content)
 
             data = content["data"]
             print(data)

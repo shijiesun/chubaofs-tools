@@ -71,7 +71,7 @@ class UserTestCase(unittest2.TestCase):
         print(content)
 
         for u in content["data"]:
-            assert "Mu" in u
+            #assert "Mu" in u
             assert "access_key" in u
             assert "create_time" in u
             assert "policy" in u
@@ -85,7 +85,7 @@ class UserTestCase(unittest2.TestCase):
             #assert "authorized_vols" in u["policy"][i] #TODO what's inside
             #assert "own_vols" in u["policy"][i]
 
-    def atest_user_get(self):
+    def test_user_get(self):
         rst = get_user_vol_list()
         assert len(rst) > 0
 
@@ -102,7 +102,7 @@ class UserTestCase(unittest2.TestCase):
         self.assert_base_resp(content)
         #print(content)
 
-        assert "Mu" in content["data"]
+        #assert "Mu" in content["data"]
         assert "access_key" in content["data"]
         assert "create_time" in content["data"]
         assert "policy" in content["data"]
