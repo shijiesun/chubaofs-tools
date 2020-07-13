@@ -149,7 +149,7 @@ class DataPartitionTestCase(unittest2.TestCase):
             assert "TotalSize" in r
             assert "UsedSize" in r
 
-    def atest_dp_create(self):
+    def test_dp_create(self):
         rst = get_user_vol_list()
         assert len(rst) > 0
 
@@ -166,7 +166,7 @@ class DataPartitionTestCase(unittest2.TestCase):
         self.assert_base_resp(content)
         print(content)
 
-    def atest_dp_load(self):
+    def test_dp_load(self):
         rst = self.get_client_dp()
         assert len(rst) > 0
 
@@ -183,7 +183,7 @@ class DataPartitionTestCase(unittest2.TestCase):
         self.assert_base_resp(content)
         print(content)
 
-    def atest_dp_decommission(self):
+    def test_dp_decommission(self):
         rst = self.get_client_dp()
         assert len(rst) > 0
 
@@ -207,7 +207,7 @@ class DataPartitionTestCase(unittest2.TestCase):
         self.assert_base_resp(content)
         print(content)
 
-    def atest_dp_offdisk(self):
+    def test_dp_offdisk(self):
         rst = self.get_client_dp()
         assert len(rst) > 0
 
